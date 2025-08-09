@@ -27,7 +27,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: List build output # Optional; helps debug if errors
+      - name: List build output
         run: ls -la dist
 
       - name: Upload artifact
