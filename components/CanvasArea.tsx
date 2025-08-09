@@ -59,9 +59,7 @@ export function CanvasArea({ canvasRef, imageState, onDownload, effectName }: Ca
                 ref={canvasRef}
                 className="max-w-full max-h-full border border-border rounded-lg shadow-2xl bg-card"
                 style={{ 
-                  imageRendering: 'pixelated',
-                  imageRendering: '-moz-crisp-edges',
-                  imageRendering: 'crisp-edges'
+                  imageRendering: 'pixelated'
                 }}
               />
               
