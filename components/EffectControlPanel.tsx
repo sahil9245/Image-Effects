@@ -9,7 +9,7 @@ import { Separator } from './ui/separator';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { ImageState, EffectType, EffectParams } from './ImageEffectsProcessor';
-import { AlertCircle, CheckCircle, Loader2, Grid3X3, Circle, Diamond, Square } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2, Grid, Circle, Diamond, Square } from 'lucide-react';
 
 interface EffectControlPanelProps {
   imageState: ImageState;
@@ -21,10 +21,10 @@ interface EffectControlPanelProps {
 }
 
 const effectConfig = {
-  pixelate: { name: 'Pixelate', icon: '▦', symbol: Grid3X3 },
+  pixelate: { name: 'Pixelate', icon: '▦', symbol: Grid },
   halftone: { name: 'Halftone', icon: '●', symbol: Circle },
   blur: { name: 'Blur', icon: '◐', symbol: Circle },
-  noise: { name: 'Noise', icon: '∴', symbol: Grid3X3 },
+  noise: { name: 'Noise', icon: '∴', symbol: Grid },
   posterize: { name: 'Posterize', icon: '▊', symbol: Square },
   'glass-refraction': { name: 'Glass', icon: '◇', symbol: Diamond },
   emboss: { name: 'Emboss', icon: '◈', symbol: Diamond },
