@@ -22,22 +22,15 @@ jobs:
           node-version: '18'
           
       - name: Install dependencies
-        working-directory: image-effects-app
         run: npm install
         
       - name: Build
-        working-directory: image-effects-app
         run: npm run build
         
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
-        
-  configure-pages:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: image-effects-app/dist
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
