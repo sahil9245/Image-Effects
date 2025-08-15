@@ -1,4 +1,4 @@
-# Image Effects Application
+# PixEffect - Image Effects Application
 
 A modern web application for applying various image effects with real-time preview capabilities.
 
