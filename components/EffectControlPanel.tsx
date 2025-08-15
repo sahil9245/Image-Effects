@@ -396,7 +396,7 @@ export function EffectControlPanel({
   // Mobile URL and Effects section
   if (isMobile && showOnlyUrlAndEffects) {
     return (
-      <div className="h-full bg-sidebar border-b border-sidebar-border p-4 overflow-y-auto">
+      <div className="h-full bg-sidebar border-b border-sidebar-border p-4">
         <div className="space-y-4">
           {/* Compact header */}
           <div className="text-center">
@@ -428,24 +428,27 @@ export function EffectControlPanel({
             </div>
           </div>
 
-          {/* Effect Selector - Compact grid */}
+          {/* Effect Selector - Single row with current effect displayed */}
           <div className="space-y-2">
-            <Label className="text-sidebar-foreground text-sm">Effect Type</Label>
-            <div className="grid grid-cols-4 gap-1">
+            <div className="flex items-center gap-2">
+              <Label className="text-sidebar-foreground text-sm">Effect Type</Label>
+              <span className="text-xs text-muted-foreground">({effectConfig[selectedEffect].icon} {effectConfig[selectedEffect].name})</span>
+            </div>
+            <div className="flex gap-1 overflow-x-auto pb-2">
               {Object.entries(effectConfig).map(([key, config]) => (
                 <Button
                   key={key}
                   variant={selectedEffect === key ? "default" : "outline"}
                   size="sm"
                   onClick={() => onEffectChange(key as EffectType)}
-                  className={`flex flex-col items-center p-2 h-auto text-xs min-h-[60px] ${
+                  className={`flex items-center gap-1 p-2 h-auto text-xs whitespace-nowrap min-w-fit ${
                     selectedEffect === key 
                       ? 'bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground border-sidebar-primary' 
                       : 'bg-sidebar-accent hover:bg-sidebar-accent/80 text-sidebar-accent-foreground border-sidebar-border'
                   }`}
                 >
-                  <span className="text-sm mb-1">{config.icon}</span>
-                  <span className="text-xs leading-tight text-center">{config.name}</span>
+                  <span className="text-sm">{config.icon}</span>
+                  <span className="text-xs">{config.name}</span>
                 </Button>
               ))}
             </div>
@@ -477,7 +480,7 @@ export function EffectControlPanel({
   // Mobile Settings section
   if (isMobile && showOnlySettings) {
     return (
-      <div className="h-full bg-sidebar p-3 overflow-y-auto">
+      <div className="h-full bg-sidebar p-3">
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-3">
             <Label className="text-sidebar-foreground text-sm font-medium">
