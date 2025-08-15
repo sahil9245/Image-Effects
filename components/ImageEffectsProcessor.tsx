@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { EffectControlPanel } from './EffectControlPanel';
 import { CanvasArea } from './CanvasArea';
 
@@ -7,6 +7,7 @@ export type EffectType = 'pixelate' | 'halftone' | 'blur' | 'noise' | 'posterize
 export interface ImageState {
   originalImage: HTMLImageElement | null;
   isLoading: boolean;
+  isProcessing: boolean;
   error: string | null;
   imageUrl: string;
 }
@@ -57,6 +58,7 @@ export function ImageEffectsProcessor() {
   const [imageState, setImageState] = useState<ImageState>({
     originalImage: null,
     isLoading: false,
+    isProcessing: false,
     error: null,
     imageUrl: ''
   });
@@ -74,6 +76,21 @@ export function ImageEffectsProcessor() {
   });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced effect application
+  const debouncedApplyEffect = useCallback((image: HTMLImageElement, effect: EffectType, params: EffectParams) => {
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+    }
+    
+    setImageState(prev => ({ ...prev, isProcessing: true }));
+    
+    processingTimeoutRef.current = setTimeout(() => {
+      applyEffect(image, effect, params);
+      setImageState(prev => ({ ...prev, isProcessing: false }));
+    }, 100); // Wait 100ms after last change
+  }, []);
 
   const applyEffect = (image: HTMLImageElement, effect: EffectType, params: EffectParams) => {
     const canvas = canvasRef.current;
@@ -82,9 +99,36 @@ export function ImageEffectsProcessor() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = image.width;
-    canvas.height = image.height;
+    // Optimize canvas size for performance
+    const MAX_DIMENSION = 1200; // Limit processing size for performance
+    let { width, height } = image;
+    
+    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+      const scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    canvas.width = width;
+    canvas.height = height;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Create optimized image for processing
+    const processImage = new Image();
+    processImage.onload = () => {
+      processEffectWithOptimizedImage(ctx, processImage, effect, params, width, height);
+    };
+    
+    // Draw resized image to temporary canvas
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d')!;
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    tempCtx.drawImage(image, 0, 0, width, height);
+    processImage.src = tempCanvas.toDataURL();
+  };
+
+  const processEffectWithOptimizedImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, effect: EffectType, params: EffectParams, width: number, height: number) => {
 
     switch (effect) {
       case 'pixelate':
@@ -116,48 +160,29 @@ export function ImageEffectsProcessor() {
 
   const applyPixelateEffect = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, params: PixelateParams) => {
     const { pixelSize } = params;
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d')!;
-    tempCanvas.width = image.width;
-    tempCanvas.height = image.height;
-    tempCtx.drawImage(image, 0, 0);
-
-    const imageData = ctx.createImageData(image.width, image.height);
-    const originalData = tempCtx.getImageData(0, 0, image.width, image.height);
-
-    for (let y = 0; y < image.height; y += pixelSize) {
-      for (let x = 0; x < image.width; x += pixelSize) {
-        let r = 0, g = 0, b = 0, a = 0, count = 0;
-
-        for (let py = y; py < Math.min(y + pixelSize, image.height); py++) {
-          for (let px = x; px < Math.min(x + pixelSize, image.width); px++) {
-            const index = (py * image.width + px) * 4;
-            r += originalData.data[index];
-            g += originalData.data[index + 1];
-            b += originalData.data[index + 2];
-            a += originalData.data[index + 3];
-            count++;
-          }
-        }
-
-        r = Math.round(r / count);
-        g = Math.round(g / count);
-        b = Math.round(b / count);
-        a = Math.round(a / count);
-
-        for (let py = y; py < Math.min(y + pixelSize, image.height); py++) {
-          for (let px = x; px < Math.min(x + pixelSize, image.width); px++) {
-            const index = (py * image.width + px) * 4;
-            imageData.data[index] = r;
-            imageData.data[index + 1] = g;
-            imageData.data[index + 2] = b;
-            imageData.data[index + 3] = a;
-          }
-        }
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
+    
+    // Use faster approach: draw scaled down then scale up
+    const smallCanvas = document.createElement('canvas');
+    const smallCtx = smallCanvas.getContext('2d')!;
+    
+    const scale = pixelSize;
+    smallCanvas.width = Math.ceil(image.width / scale);
+    smallCanvas.height = Math.ceil(image.height / scale);
+    
+    // Disable smoothing for pixelated effect
+    smallCtx.imageSmoothingEnabled = false;
+    
+    // Draw image scaled down
+    smallCtx.drawImage(image, 0, 0, smallCanvas.width, smallCanvas.height);
+    
+    // Disable smoothing for main canvas too
+    ctx.imageSmoothingEnabled = false;
+    
+    // Draw scaled up to create pixelated effect
+    ctx.drawImage(smallCanvas, 0, 0, image.width, image.height);
+    
+    // Re-enable smoothing
+    ctx.imageSmoothingEnabled = true;
   };
 
   const applyHalftoneEffect = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, params: HalftoneParams) => {
@@ -668,9 +693,9 @@ export function ImageEffectsProcessor() {
 
   useEffect(() => {
     if (imageState.originalImage) {
-      applyEffect(imageState.originalImage, selectedEffect, effectParams[selectedEffect]);
+      debouncedApplyEffect(imageState.originalImage, selectedEffect, effectParams[selectedEffect]);
     }
-  }, [imageState.originalImage, selectedEffect, effectParams]);
+  }, [imageState.originalImage, selectedEffect, effectParams, debouncedApplyEffect]);
 
   return (
     <div className="flex h-screen bg-background text-foreground">

@@ -16,10 +16,16 @@ export function CanvasArea({ canvasRef, imageState, onDownload, effectName }: Ca
   return (
     <div className="flex-1 bg-background relative overflow-hidden">
       {/* Header with download button */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        {imageState.isProcessing && (
+          <div className="flex items-center gap-2 bg-card/90 backdrop-blur-sm px-3 py-2 rounded-md border border-border">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Processing...</span>
+          </div>
+        )}
         <Button
           onClick={onDownload}
-          disabled={!imageState.originalImage}
+          disabled={!imageState.originalImage || imageState.isProcessing}
           variant="outline"
           size="sm"
           className="bg-card/90 hover:bg-accent border-border text-foreground backdrop-blur-sm"
