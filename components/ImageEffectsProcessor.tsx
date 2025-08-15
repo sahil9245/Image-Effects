@@ -698,21 +698,69 @@ export function ImageEffectsProcessor() {
   }, [imageState.originalImage, selectedEffect, effectParams, debouncedApplyEffect]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      <EffectControlPanel
-        imageState={imageState}
-        selectedEffect={selectedEffect}
-        effectParams={effectParams}
-        onLoadImage={loadImage}
-        onEffectChange={setSelectedEffect}
-        onParamsChange={updateEffectParams}
-      />
-      <CanvasArea
-        canvasRef={canvasRef}
-        imageState={imageState}
-        onDownload={downloadImage}
-        effectName={selectedEffect}
-      />
+    <div className="h-screen bg-background text-foreground">
+      {/* Desktop Layout */}
+      <div className="hidden lg:flex h-full">
+        <EffectControlPanel
+          imageState={imageState}
+          selectedEffect={selectedEffect}
+          effectParams={effectParams}
+          onLoadImage={loadImage}
+          onEffectChange={setSelectedEffect}
+          onParamsChange={updateEffectParams}
+        />
+        <CanvasArea
+          canvasRef={canvasRef}
+          imageState={imageState}
+          onDownload={downloadImage}
+          effectName={selectedEffect}
+        />
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="lg:hidden h-full flex flex-col">
+        {/* Image Area - 50% */}
+        <div className="h-1/2 border-b border-border">
+          <CanvasArea
+            canvasRef={canvasRef}
+            imageState={imageState}
+            onDownload={downloadImage}
+            effectName={selectedEffect}
+            isMobile={true}
+          />
+        </div>
+        
+        {/* Controls Area - 50% split into URL/Effects (30%) and Settings (20%) */}
+        <div className="h-1/2 flex flex-col">
+          {/* URL and Effect Selection - 60% of bottom half (30% of total) */}
+          <div className="h-3/5 border-b border-border">
+            <EffectControlPanel
+              imageState={imageState}
+              selectedEffect={selectedEffect}
+              effectParams={effectParams}
+              onLoadImage={loadImage}
+              onEffectChange={setSelectedEffect}
+              onParamsChange={updateEffectParams}
+              isMobile={true}
+              showOnlyUrlAndEffects={true}
+            />
+          </div>
+          
+          {/* Settings Area - 40% of bottom half (20% of total) */}
+          <div className="h-2/5">
+            <EffectControlPanel
+              imageState={imageState}
+              selectedEffect={selectedEffect}
+              effectParams={effectParams}
+              onLoadImage={loadImage}
+              onEffectChange={setSelectedEffect}
+              onParamsChange={updateEffectParams}
+              isMobile={true}
+              showOnlySettings={true}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

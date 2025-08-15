@@ -18,6 +18,9 @@ interface EffectControlPanelProps {
   onLoadImage: (url: string) => void;
   onEffectChange: (effect: EffectType) => void;
   onParamsChange: (effect: EffectType, params: Partial<EffectParams>) => void;
+  isMobile?: boolean;
+  showOnlyUrlAndEffects?: boolean;
+  showOnlySettings?: boolean;
 }
 
 const effectConfig = {
@@ -37,7 +40,10 @@ export function EffectControlPanel({
   effectParams, 
   onLoadImage, 
   onEffectChange, 
-  onParamsChange 
+  onParamsChange,
+  isMobile = false,
+  showOnlyUrlAndEffects = false,
+  showOnlySettings = false
 }: EffectControlPanelProps) {
   const [urlInput, setUrlInput] = useState('');
 
@@ -387,6 +393,109 @@ export function EffectControlPanel({
     }
   };
 
+  // Mobile URL and Effects section
+  if (isMobile && showOnlyUrlAndEffects) {
+    return (
+      <div className="h-full bg-sidebar border-b border-sidebar-border p-4 overflow-y-auto">
+        <div className="space-y-4">
+          {/* Compact header */}
+          <div className="text-center">
+            <h2 className="text-lg font-medium text-sidebar-foreground">Image Effects</h2>
+          </div>
+
+          {/* URL Input Section */}
+          <div className="space-y-2">
+            <Label htmlFor="image-url" className="text-sidebar-foreground text-sm">Image URL</Label>
+            <div className="flex gap-2">
+              <Input
+                id="image-url"
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="bg-input-background border-border text-foreground placeholder:text-muted-foreground text-sm"
+              />
+              <Button 
+                onClick={handleLoadClick}
+                disabled={imageState.isLoading || !urlInput.trim()}
+                size="sm"
+                className="bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground whitespace-nowrap"
+              >
+                {imageState.isLoading && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                {imageState.isLoading ? 'Loading' : 'Load'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Effect Selector - Compact grid */}
+          <div className="space-y-2">
+            <Label className="text-sidebar-foreground text-sm">Effect Type</Label>
+            <div className="grid grid-cols-4 gap-1">
+              {Object.entries(effectConfig).map(([key, config]) => (
+                <Button
+                  key={key}
+                  variant={selectedEffect === key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onEffectChange(key as EffectType)}
+                  className={`flex flex-col items-center p-2 h-auto text-xs min-h-[60px] ${
+                    selectedEffect === key 
+                      ? 'bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground border-sidebar-primary' 
+                      : 'bg-sidebar-accent hover:bg-sidebar-accent/80 text-sidebar-accent-foreground border-sidebar-border'
+                  }`}
+                >
+                  <span className="text-sm mb-1">{config.icon}</span>
+                  <span className="text-xs leading-tight text-center">{config.name}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Status Messages - Compact */}
+          {imageState.error && (
+            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 py-2">
+              <AlertCircle className="h-3 w-3" />
+              <AlertDescription className="text-destructive-foreground text-xs">
+                {imageState.error}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {imageState.originalImage && !imageState.isLoading && (
+            <Alert className="bg-primary/10 border-primary/20 py-2">
+              <CheckCircle className="h-3 w-3" />
+              <AlertDescription className="text-foreground text-xs">
+                Image loaded ({imageState.originalImage.width}×{imageState.originalImage.height})
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile Settings section
+  if (isMobile && showOnlySettings) {
+    return (
+      <div className="h-full bg-sidebar p-3 overflow-y-auto">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between mb-3">
+            <Label className="text-sidebar-foreground text-sm font-medium">
+              {effectConfig[selectedEffect].name} Settings
+            </Label>
+            <span className="text-lg">
+              {effectConfig[selectedEffect].icon}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {renderEffectControls()}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop layout (original)
   return (
     <div className="w-80 bg-sidebar border-r border-sidebar-border p-6 flex flex-col">
       <div className="mb-8">
@@ -475,25 +584,27 @@ export function EffectControlPanel({
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="mt-auto">
-        <Separator className="mb-4 bg-sidebar-border" />
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-sidebar-foreground">Instructions</h3>
-          <ul className="text-muted-foreground text-sm space-y-1">
-            <li>• Load an image using a public URL</li>
-            <li>• Select an effect from the grid above</li>
-            <li>• Adjust settings for real-time preview</li>
-            <li>• Download your processed image</li>
-          </ul>
-          
-          <div className="mt-3 p-3 bg-muted/20 rounded-md">
-            <p className="text-xs text-muted-foreground">
-              <strong>Note:</strong> Some URLs may not work due to CORS restrictions.
-            </p>
+      {/* Instructions - Hidden on mobile as requested */}
+      {!isMobile && (
+        <div className="mt-auto">
+          <Separator className="mb-4 bg-sidebar-border" />
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-sidebar-foreground">Instructions</h3>
+            <ul className="text-muted-foreground text-sm space-y-1">
+              <li>• Load an image using a public URL</li>
+              <li>• Select an effect from the grid above</li>
+              <li>• Adjust settings for real-time preview</li>
+              <li>• Download your processed image</li>
+            </ul>
+            
+            <div className="mt-3 p-3 bg-muted/20 rounded-md">
+              <p className="text-xs text-muted-foreground">
+                <strong>Note:</strong> Some URLs may not work due to CORS restrictions.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
