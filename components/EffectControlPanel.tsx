@@ -396,8 +396,8 @@ export function EffectControlPanel({
   // Mobile URL and Effects section
   if (isMobile && showOnlyUrlAndEffects) {
     return (
-      <div className="h-full bg-sidebar border-b border-sidebar-border p-5">
-        <div className="space-y-5">
+      <div className="h-full bg-sidebar border-b border-sidebar-border p-4 flex flex-col">
+        <div className="flex-1 space-y-4 min-h-0">
           {/* Compact header */}
           <div className="text-center">
             <h2 className="text-lg font-medium text-sidebar-foreground">Image Effects</h2>
@@ -430,7 +430,12 @@ export function EffectControlPanel({
 
           {/* Effect Selector - Clean horizontal row */}
           <div className="space-y-3">
-            <Label className="text-sidebar-foreground text-sm font-medium">Effect Type</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sidebar-foreground text-sm font-medium">Effect Type</Label>
+              <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                {effectConfig[selectedEffect].name}
+              </span>
+            </div>
             <div className="flex gap-3 overflow-x-auto pb-2 px-1">
               {Object.entries(effectConfig).map(([key, config]) => (
                 <Button
@@ -451,26 +456,45 @@ export function EffectControlPanel({
             </div>
           </div>
 
-          {/* Status Messages - Better spacing */}
-          <div className="space-y-3">
-            {imageState.error && (
-              <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 py-3">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-destructive-foreground text-sm">
-                  {imageState.error}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {imageState.originalImage && !imageState.isLoading && (
-              <Alert className="bg-primary/10 border-primary/20 py-3">
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription className="text-foreground text-sm">
-                  Image loaded ({imageState.originalImage.width}×{imageState.originalImage.height})
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
+          {/* Status Messages - Responsive */}
+          {(imageState.error || imageState.isLoading || imageState.originalImage) && (
+            <div className="space-y-2">
+              {imageState.error && (
+                <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 py-2">
+                  <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                  <AlertDescription className="text-destructive-foreground text-xs leading-relaxed">
+                    {imageState.error.length > 60 ? 
+                      `${imageState.error.substring(0, 60)}...` : 
+                      imageState.error
+                    }
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {imageState.isLoading && (
+                <Alert className="bg-primary/10 border-primary/20 py-2">
+                  <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+                  <AlertDescription className="text-foreground text-xs">
+                    Loading image...
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {imageState.originalImage && !imageState.isLoading && (
+                <Alert className="bg-primary/10 border-primary/20 py-2">
+                  <CheckCircle className="h-3 w-3 flex-shrink-0" />
+                  <AlertDescription className="text-foreground text-xs">
+                    <span className="block">
+                      Image loaded
+                    </span>
+                    <span className="text-muted-foreground">
+                      {imageState.originalImage.width}×{imageState.originalImage.height}px
+                    </span>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -479,9 +503,9 @@ export function EffectControlPanel({
   // Mobile Settings section
   if (isMobile && showOnlySettings) {
     return (
-      <div className="h-full bg-sidebar p-5">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+      <div className="h-full bg-sidebar p-4 flex flex-col">
+        <div className="flex-1 space-y-3 min-h-0">
+          <div className="flex items-center justify-between flex-shrink-0">
             <Label className="text-sidebar-foreground text-sm font-medium">
               {effectConfig[selectedEffect].name} Settings
             </Label>
@@ -489,7 +513,7 @@ export function EffectControlPanel({
               {effectConfig[selectedEffect].icon}
             </span>
           </div>
-          <div className="space-y-4">
+          <div className="flex-1 space-y-3 overflow-y-auto">
             {renderEffectControls()}
           </div>
         </div>
