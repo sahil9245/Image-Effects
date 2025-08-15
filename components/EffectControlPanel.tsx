@@ -396,17 +396,17 @@ export function EffectControlPanel({
   // Mobile URL and Effects section
   if (isMobile && showOnlyUrlAndEffects) {
     return (
-      <div className="h-full bg-sidebar border-b border-sidebar-border p-4">
-        <div className="space-y-4">
+      <div className="h-full bg-sidebar border-b border-sidebar-border p-5">
+        <div className="space-y-5">
           {/* Compact header */}
           <div className="text-center">
             <h2 className="text-lg font-medium text-sidebar-foreground">Image Effects</h2>
           </div>
 
           {/* URL Input Section */}
-          <div className="space-y-2">
-            <Label htmlFor="image-url" className="text-sidebar-foreground text-sm">Image URL</Label>
-            <div className="flex gap-2">
+          <div className="space-y-3">
+            <Label htmlFor="image-url" className="text-sidebar-foreground text-sm font-medium">Image URL</Label>
+            <div className="flex gap-3">
               <Input
                 id="image-url"
                 type="url"
@@ -414,13 +414,13 @@ export function EffectControlPanel({
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="bg-input-background border-border text-foreground placeholder:text-muted-foreground text-sm"
+                className="bg-input-background border-border text-foreground placeholder:text-muted-foreground text-sm h-10"
               />
               <Button 
                 onClick={handleLoadClick}
                 disabled={imageState.isLoading || !urlInput.trim()}
                 size="sm"
-                className="bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground whitespace-nowrap"
+                className="bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground whitespace-nowrap px-4 h-10"
               >
                 {imageState.isLoading && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
                 {imageState.isLoading ? 'Loading' : 'Load'}
@@ -428,50 +428,49 @@ export function EffectControlPanel({
             </div>
           </div>
 
-          {/* Effect Selector - Single row with current effect displayed */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label className="text-sidebar-foreground text-sm">Effect Type</Label>
-              <span className="text-xs text-muted-foreground">({effectConfig[selectedEffect].icon} {effectConfig[selectedEffect].name})</span>
-            </div>
-            <div className="flex gap-1 overflow-x-auto pb-2">
+          {/* Effect Selector - Clean horizontal row */}
+          <div className="space-y-3">
+            <Label className="text-sidebar-foreground text-sm font-medium">Effect Type</Label>
+            <div className="flex gap-3 overflow-x-auto pb-2 px-1">
               {Object.entries(effectConfig).map(([key, config]) => (
                 <Button
                   key={key}
                   variant={selectedEffect === key ? "default" : "outline"}
                   size="sm"
                   onClick={() => onEffectChange(key as EffectType)}
-                  className={`flex items-center gap-1 p-2 h-auto text-xs whitespace-nowrap min-w-fit ${
+                  className={`flex items-center justify-center p-4 h-12 w-12 text-lg rounded-lg min-w-[48px] ${
                     selectedEffect === key 
-                      ? 'bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground border-sidebar-primary' 
+                      ? 'bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground border-sidebar-primary shadow-sm' 
                       : 'bg-sidebar-accent hover:bg-sidebar-accent/80 text-sidebar-accent-foreground border-sidebar-border'
                   }`}
+                  title={config.name}
                 >
-                  <span className="text-sm">{config.icon}</span>
-                  <span className="text-xs">{config.name}</span>
+                  <span>{config.icon}</span>
                 </Button>
               ))}
             </div>
           </div>
 
-          {/* Status Messages - Compact */}
-          {imageState.error && (
-            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 py-2">
-              <AlertCircle className="h-3 w-3" />
-              <AlertDescription className="text-destructive-foreground text-xs">
-                {imageState.error}
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {imageState.originalImage && !imageState.isLoading && (
-            <Alert className="bg-primary/10 border-primary/20 py-2">
-              <CheckCircle className="h-3 w-3" />
-              <AlertDescription className="text-foreground text-xs">
-                Image loaded ({imageState.originalImage.width}×{imageState.originalImage.height})
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Status Messages - Better spacing */}
+          <div className="space-y-3">
+            {imageState.error && (
+              <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 py-3">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-destructive-foreground text-sm">
+                  {imageState.error}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {imageState.originalImage && !imageState.isLoading && (
+              <Alert className="bg-primary/10 border-primary/20 py-3">
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription className="text-foreground text-sm">
+                  Image loaded ({imageState.originalImage.width}×{imageState.originalImage.height})
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -480,17 +479,17 @@ export function EffectControlPanel({
   // Mobile Settings section
   if (isMobile && showOnlySettings) {
     return (
-      <div className="h-full bg-sidebar p-3">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between mb-3">
+      <div className="h-full bg-sidebar p-5">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <Label className="text-sidebar-foreground text-sm font-medium">
               {effectConfig[selectedEffect].name} Settings
             </Label>
-            <span className="text-lg">
+            <span className="text-xl">
               {effectConfig[selectedEffect].icon}
             </span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {renderEffectControls()}
           </div>
         </div>
