@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ControlPanel } from './ControlPanel';
 import { CanvasArea } from './CanvasArea';
 
@@ -199,6 +199,7 @@ export function ImagePixelator() {
         canvasRef={canvasRef}
         imageState={imageState}
         onDownload={downloadImage}
+        effectName="pixelate"
       />
     </div>
   );
