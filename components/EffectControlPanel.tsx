@@ -430,12 +430,11 @@ export function EffectControlPanel({
 
           {/* Effect Selector - Clean horizontal row */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sidebar-foreground text-sm font-medium">Effect Type</Label>
-              <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+            <Label className="text-sidebar-foreground text-sm font-medium">
+              Effect Type <span className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-1 rounded ml-2">
                 {effectConfig[selectedEffect].name}
               </span>
-            </div>
+            </Label>
             <div className="flex gap-3 overflow-x-auto pb-2 px-1">
               {Object.entries(effectConfig).map(([key, config]) => (
                 <Button

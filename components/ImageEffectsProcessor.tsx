@@ -700,7 +700,7 @@ export function ImageEffectsProcessor() {
   return (
     <div className="h-screen bg-background text-foreground">
       {/* Desktop Layout */}
-      <div className="hidden lg:flex h-full">
+      <div className="hidden md:flex h-full">
         <EffectControlPanel
           imageState={imageState}
           selectedEffect={selectedEffect}
@@ -718,7 +718,7 @@ export function ImageEffectsProcessor() {
       </div>
 
       {/* Mobile Layout */}
-      <div className="lg:hidden h-full flex flex-col">
+      <div className="md:hidden h-full flex flex-col">
         {/* Image Area - 50% */}
         <div className="h-1/2 border-b border-border">
           <CanvasArea
