@@ -700,7 +700,7 @@ export function ImageEffectsProcessor() {
   return (
     <div className="h-screen bg-background text-foreground">
       {/* Desktop Layout */}
-      <div className="hidden md:flex h-full">
+      <div className="hidden lg:flex h-full">
         <EffectControlPanel
           imageState={imageState}
           selectedEffect={selectedEffect}
@@ -708,17 +708,19 @@ export function ImageEffectsProcessor() {
           onLoadImage={loadImage}
           onEffectChange={setSelectedEffect}
           onParamsChange={updateEffectParams}
+          isMobile={false}
         />
         <CanvasArea
           canvasRef={canvasRef}
           imageState={imageState}
           onDownload={downloadImage}
           effectName={selectedEffect}
+          isMobile={false}
         />
       </div>
 
       {/* Mobile Layout */}
-      <div className="md:hidden h-full flex flex-col">
+      <div className="lg:hidden h-full flex flex-col">
         {/* Image Area - 50% */}
         <div className="h-1/2 border-b border-border">
           <CanvasArea
