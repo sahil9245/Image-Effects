@@ -456,8 +456,8 @@ export function EffectControlPanel({
             </div>
           </div>
 
-          {/* Status Messages - Responsive */}
-          {(imageState.error || imageState.isLoading || imageState.originalImage) && (
+          {/* Status Messages - Responsive (errors and loading only) */}
+          {(imageState.error || imageState.isLoading) && (
             <div className="space-y-2">
               {imageState.error && (
                 <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 py-2">
@@ -476,20 +476,6 @@ export function EffectControlPanel({
                   <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
                   <AlertDescription className="text-foreground text-xs">
                     Loading image...
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {imageState.originalImage && !imageState.isLoading && (
-                <Alert className="bg-primary/10 border-primary/20 py-2">
-                  <CheckCircle className="h-3 w-3 flex-shrink-0" />
-                  <AlertDescription className="text-foreground text-xs">
-                    <span className="block">
-                      Image loaded
-                    </span>
-                    <span className="text-muted-foreground">
-                      {imageState.originalImage.width}×{imageState.originalImage.height}px
-                    </span>
                   </AlertDescription>
                 </Alert>
               )}
