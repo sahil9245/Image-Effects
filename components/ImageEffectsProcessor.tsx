@@ -94,67 +94,360 @@ export function ImageEffectsProcessor() {
 
   const applyEffect = (image: HTMLImageElement, effect: EffectType, params: EffectParams) => {
     const canvas = canvasRef.current;
-    if (!canvas || !image) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Optimize canvas size for performance
-    const MAX_DIMENSION = 1200; // Limit processing size for performance
-    let { width, height } = image;
-    
-    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-      const scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
+    if (!canvas || !image) {
+      console.log('Canvas or image not available:', canvas, image);
+      return;
     }
 
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.log('Canvas context not available');
+      return;
+    }
+
+    console.log('Drawing to canvas:', image.width, 'x', image.height);
+
+    // Get viewport-aware canvas sizing
+    const { width: originalWidth, height: originalHeight } = image;
+    
+    // Ensure minimum dimensions
+    if (originalWidth <= 0 || originalHeight <= 0) {
+      console.error('Invalid image dimensions:', originalWidth, originalHeight);
+      return;
+    }
+    
+    // Get canvas container dimensions - look for the main canvas area
+    let container = canvas.parentElement;
+    let containerRect = null;
+    
+    // Walk up the DOM to find a container with substantial size
+    while (container && container !== document.body) {
+      const rect = container.getBoundingClientRect();
+      if (rect.width > 200 && rect.height > 200) {
+        containerRect = rect;
+        break;
+      }
+      container = container.parentElement;
+    }
+    
+    let availableWidth, availableHeight;
+    
+    // Get viewport dimensions for responsive calculations
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Detect layout type based on viewport size
+    const isDesktopLayout = viewportWidth >= 1024; // lg breakpoint in Tailwind
+    
+    // Define responsive breakpoints and sizing strategies with layout-aware adjustments
+    const getResponsiveConfig = () => {
+      if (viewportWidth >= 1920) {
+        // Large desktop monitors (27"+ displays)
+        return {
+          spaceUsage: isDesktopLayout ? 0.85 : 0.9, // More space on mobile layout
+          minWidth: 800,
+          minHeight: 600,
+          name: 'large-desktop',
+          layout: isDesktopLayout ? 'sidebar' : 'stacked'
+        };
+      } else if (viewportWidth >= 1366) {
+        // Standard desktop/laptop screens
+        return {
+          spaceUsage: isDesktopLayout ? 0.8 : 0.85,
+          minWidth: 600,
+          minHeight: 450,
+          name: 'desktop',
+          layout: isDesktopLayout ? 'sidebar' : 'stacked'
+        };
+      } else if (viewportWidth >= 1024) {
+        // Large tablets landscape - edge case between layouts
+        return {
+          spaceUsage: isDesktopLayout ? 0.75 : 0.8,
+          minWidth: 500,
+          minHeight: 350,
+          name: 'tablet-large',
+          layout: isDesktopLayout ? 'sidebar' : 'stacked'
+        };
+      } else if (viewportWidth >= 768) {
+        // Tablets portrait / small laptops - always stacked
+        return {
+          spaceUsage: 0.85, // More space since controls are above
+          minWidth: 400,
+          minHeight: 300,
+          name: 'tablet',
+          layout: 'stacked'
+        };
+      } else {
+        // Mobile phones - always stacked
+        return {
+          spaceUsage: 0.9, // Maximum space on mobile for prominence
+          minWidth: 280,
+          minHeight: 200,
+          name: 'mobile',
+          layout: 'stacked'
+        };
+      }
+    };
+    
+    const responsiveConfig = getResponsiveConfig();
+    
+    if (containerRect) {
+      // Layout-aware space calculations
+      if (responsiveConfig.layout === 'sidebar') {
+        // Desktop sidebar layout: account for sidebar width (320px) and padding
+        const effectiveViewportWidth = viewportWidth - 320; // sidebar width
+        const widthRatio = containerRect.width / effectiveViewportWidth;
+        
+        // Apply responsive sizing with layout awareness
+        availableWidth = containerRect.width * responsiveConfig.spaceUsage;
+        availableHeight = containerRect.height * responsiveConfig.spaceUsage;
+        
+        console.log('Desktop sidebar layout detected:', {
+          sidebarWidth: 320,
+          effectiveViewport: effectiveViewportWidth,
+          widthRatio: widthRatio.toFixed(3)
+        });
+      } else {
+        // Mobile stacked layout: full width available, but height is split
+        const mobileControlsHeight = viewportHeight * 0.5; // controls take 50% on mobile
+        const effectiveCanvasHeight = viewportHeight - mobileControlsHeight;
+        
+        // Use more aggressive space usage for stacked layout
+        availableWidth = containerRect.width * responsiveConfig.spaceUsage;
+        availableHeight = Math.min(
+          containerRect.height * responsiveConfig.spaceUsage,
+          effectiveCanvasHeight * 0.9 // Use 90% of available canvas area
+        );
+        
+        console.log('Mobile stacked layout detected:', {
+          controlsHeight: mobileControlsHeight,
+          effectiveCanvasHeight: effectiveCanvasHeight,
+          adjustedHeight: availableHeight
+        });
+      }
+      
+      // Ensure minimum sizes for the current breakpoint
+      availableWidth = Math.max(availableWidth, responsiveConfig.minWidth);
+      availableHeight = Math.max(availableHeight, responsiveConfig.minHeight);
+      
+      console.log('Layout-aware canvas sizing:', {
+        viewport: `${viewportWidth}×${viewportHeight}`,
+        breakpoint: responsiveConfig.name,
+        layout: responsiveConfig.layout,
+        containerSize: `${containerRect.width}×${containerRect.height}`,
+        spaceUsage: `${responsiveConfig.spaceUsage * 100}%`,
+        availableSpace: `${availableWidth}×${availableHeight}`,
+        originalImage: `${originalWidth}×${originalHeight}`
+      });
+    } else {
+      // Fallback: Use responsive viewport calculations with layout awareness
+      if (responsiveConfig.layout === 'sidebar') {
+        availableWidth = (viewportWidth - 320) * responsiveConfig.spaceUsage; // Account for sidebar
+        availableHeight = viewportHeight * responsiveConfig.spaceUsage;
+      } else {
+        availableWidth = viewportWidth * responsiveConfig.spaceUsage;
+        availableHeight = (viewportHeight * 0.5) * responsiveConfig.spaceUsage; // Account for stacked layout
+      }
+      
+      console.log('Using layout-aware viewport fallback:', {
+        viewport: `${viewportWidth}×${viewportHeight}`,
+        breakpoint: responsiveConfig.name,
+        layout: responsiveConfig.layout,
+        availableSpace: `${availableWidth}×${availableHeight}`
+      });
+    }
+    
+    // Dynamic performance limits based on viewport size
+    const getPerformanceLimit = () => {
+      if (viewportWidth >= 1920) return 2000; // Large displays can handle more
+      if (viewportWidth >= 1366) return 1600; // Standard desktop
+      if (viewportWidth >= 1024) return 1200; // Tablets
+      return 800; // Mobile - keep it performant
+    };
+    
+    const MAX_DIMENSION = getPerformanceLimit();
+    
+    // Calculate responsive scale based on viewport and container
+    const scaleByWidth = availableWidth / originalWidth;
+    const scaleByHeight = availableHeight / originalHeight;
+    
+    // Use the smaller scale to ensure it fits
+    let viewportScale = Math.min(scaleByWidth, scaleByHeight);
+    
+    // Dynamic upscaling limits based on screen size
+    const getMaxUpscale = () => {
+      if (viewportWidth >= 1920) return 3; // Large displays - allow more upscaling
+      if (viewportWidth >= 1366) return 2.5; // Desktop - moderate upscaling
+      if (viewportWidth >= 1024) return 2; // Tablet - conservative upscaling
+      return 1.5; // Mobile - minimal upscaling for performance
+    };
+    
+    viewportScale = Math.min(viewportScale, getMaxUpscale());
+    
+    console.log('Responsive scale calculation:', {
+      breakpoint: responsiveConfig.name,
+      viewport: `${viewportWidth}×${viewportHeight}`,
+      scaleByWidth: scaleByWidth.toFixed(3),
+      scaleByHeight: scaleByHeight.toFixed(3),
+      maxUpscale: getMaxUpscale(),
+      finalScale: viewportScale.toFixed(3),
+      targetWidth: Math.round(originalWidth * viewportScale),
+      targetHeight: Math.round(originalHeight * viewportScale),
+      performanceLimit: MAX_DIMENSION
+    });
+    
+    // Apply viewport scaling
+    let width = Math.round(originalWidth * viewportScale);
+    let height = Math.round(originalHeight * viewportScale);
+    
+    // Apply performance limits if still too large
+    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+      const performanceScale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+      width = Math.round(width * performanceScale);
+      height = Math.round(height * performanceScale);
+      console.log('Applied performance scaling:', performanceScale.toFixed(3));
+    }
+
+    // Ensure prominent minimum sizes for professional appearance
+    const MIN_WIDTH = 400;  // Much larger minimum for desktop prominence
+    const MIN_HEIGHT = 300;
+    
+    if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+      const minScale = Math.max(MIN_WIDTH / width, MIN_HEIGHT / height);
+      width = Math.round(width * minScale);
+      height = Math.round(height * minScale);
+      console.log('Applied minimum size scaling for prominence:', minScale.toFixed(3));
+    }
+
+    // Ensure final dimensions are substantial
+    width = Math.max(MIN_WIDTH, width);
+    height = Math.max(MIN_HEIGHT, height);
+    
+    console.log('Image scaling:', {
+      original: `${originalWidth}x${originalHeight}`,
+      viewport: `${availableWidth}x${availableHeight}`,
+      viewportScale: viewportScale.toFixed(3),
+      final: `${width}x${height}`
+    });
+
+    // Set canvas internal dimensions
     canvas.width = width;
     canvas.height = height;
+    
+    // Set responsive CSS dimensions for proper display
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.style.maxWidth = '100%';
+    canvas.style.maxHeight = '100%';
+    canvas.style.display = 'block';
+    canvas.style.objectFit = 'contain';
+    canvas.style.margin = 'auto'; // Center the canvas
+    
+    console.log('Canvas size set to:', width, 'x', height);
+    console.log('Canvas CSS dimensions set to:', canvas.style.width, 'x', canvas.style.height);
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // First draw the original image immediately to show something
+    try {
+      console.log('About to draw image. Canvas dimensions:', canvas.width, 'x', canvas.height);
+      console.log('Image dimensions:', image.width, 'x', image.height);
+      console.log('Drawing dimensions:', width, 'x', height);
+      
+      ctx.drawImage(image, 0, 0, width, height);
+      console.log('Image drawn to canvas successfully');
+      
+      // Verify the drawing worked by checking pixel data
+      const imageData = ctx.getImageData(0, 0, Math.min(10, width), Math.min(10, height));
+      const hasPixels = imageData.data.some(pixel => pixel > 0);
+      console.log('Canvas has pixel data:', hasPixels);
+      
+    } catch (error) {
+      console.error('Error drawing image to canvas:', error);
+      console.error('Canvas state:', {
+        width: canvas.width,
+        height: canvas.height,
+        styleWidth: canvas.style.width,
+        styleHeight: canvas.style.height
+      });
+    }
 
     // Create optimized image for processing
     const processImage = new Image();
     processImage.onload = () => {
+      console.log('Processing image loaded, applying effect:', effect);
+      // Clear and apply the effect
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       processEffectWithOptimizedImage(ctx, processImage, effect, params, width, height);
     };
     
+    processImage.onerror = () => {
+      console.log('Processing image failed, using fallback');
+      // Fallback: just draw the original image if processing fails
+      try {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0, width, height);
+        console.log('Fallback image drawn successfully');
+      } catch (error) {
+        console.error('Error in fallback image drawing:', error);
+      }
+    };
+    
     // Draw resized image to temporary canvas
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d')!;
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    tempCtx.drawImage(image, 0, 0, width, height);
-    processImage.src = tempCanvas.toDataURL();
+    try {
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d')!;
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      tempCtx.drawImage(image, 0, 0, width, height);
+      
+      const dataURL = tempCanvas.toDataURL();
+      console.log('Temporary canvas created, data URL length:', dataURL.length);
+      processImage.src = dataURL;
+    } catch (error) {
+      console.error('Error creating temporary canvas:', error);
+      // If temp canvas fails, just draw the original image
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, width, height);
+    }
   };
 
-  const processEffectWithOptimizedImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, effect: EffectType, params: EffectParams, width: number, height: number) => {
-
-    switch (effect) {
-      case 'pixelate':
-        applyPixelateEffect(ctx, image, params as PixelateParams);
-        break;
-      case 'halftone':
-        applyHalftoneEffect(ctx, image, params as HalftoneParams);
-        break;
-      case 'blur':
-        applyBlurEffect(ctx, image, params as BlurParams);
-        break;
-      case 'noise':
-        applyNoiseEffect(ctx, image, params as NoiseParams);
-        break;
-      case 'posterize':
-        applyPosterizeEffect(ctx, image, params as PosterizeParams);
-        break;
-      case 'glass-refraction':
-        applyGlassRefractionEffect(ctx, image, params as GlassRefractionParams);
-        break;
-      case 'emboss':
-        applyEmbossEffect(ctx, image, params as EmbossParams);
-        break;
-      case 'vintage':
-        applyVintageEffect(ctx, image, params as VintageParams);
-        break;
+  const processEffectWithOptimizedImage = (ctx: CanvasRenderingContext2D, image: HTMLImageElement, effect: EffectType, params: EffectParams, _width: number, _height: number) => {
+    try {
+      switch (effect) {
+        case 'pixelate':
+          applyPixelateEffect(ctx, image, params as PixelateParams);
+          break;
+        case 'halftone':
+          applyHalftoneEffect(ctx, image, params as HalftoneParams);
+          break;
+        case 'blur':
+          applyBlurEffect(ctx, image, params as BlurParams);
+          break;
+        case 'noise':
+          applyNoiseEffect(ctx, image, params as NoiseParams);
+          break;
+        case 'posterize':
+          applyPosterizeEffect(ctx, image, params as PosterizeParams);
+          break;
+        case 'glass-refraction':
+          applyGlassRefractionEffect(ctx, image, params as GlassRefractionParams);
+          break;
+        case 'emboss':
+          applyEmbossEffect(ctx, image, params as EmbossParams);
+          break;
+        case 'vintage':
+          applyVintageEffect(ctx, image, params as VintageParams);
+          break;
+        default:
+          // Fallback: just draw the image without effects
+          ctx.drawImage(image, 0, 0);
+      }
+    } catch (error) {
+      // If any effect fails, fall back to drawing the original image
+      console.error('Effect processing failed:', error);
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.drawImage(image, 0, 0);
     }
   };
 
@@ -632,6 +925,7 @@ export function ImageEffectsProcessor() {
     const loadWithoutCORS = () => {
       const imgNoCORS = new Image();
       imgNoCORS.onload = () => {
+        console.log('Image loaded without CORS:', imgNoCORS.width, 'x', imgNoCORS.height);
         setImageState(prev => ({ 
           ...prev, 
           originalImage: imgNoCORS, 
@@ -652,6 +946,7 @@ export function ImageEffectsProcessor() {
     img.crossOrigin = 'anonymous';
     
     img.onload = () => {
+      console.log('Image loaded successfully:', img.width, 'x', img.height);
       setImageState(prev => ({ 
         ...prev, 
         originalImage: img, 
@@ -693,75 +988,103 @@ export function ImageEffectsProcessor() {
 
   useEffect(() => {
     if (imageState.originalImage) {
+      console.log('=== USEEFFECT TRIGGERED ===');
+      console.log('Applying effect to image:', imageState.originalImage.width, 'x', imageState.originalImage.height);
+      console.log('Canvas ref available:', !!canvasRef.current);
+      console.log('Selected effect:', selectedEffect);
+      
+      if (canvasRef.current) {
+        console.log('Canvas element dimensions:', {
+          clientWidth: canvasRef.current.clientWidth,
+          clientHeight: canvasRef.current.clientHeight,
+          offsetWidth: canvasRef.current.offsetWidth,
+          offsetHeight: canvasRef.current.offsetHeight
+        });
+      }
+      
       debouncedApplyEffect(imageState.originalImage, selectedEffect, effectParams[selectedEffect]);
     }
   }, [imageState.originalImage, selectedEffect, effectParams, debouncedApplyEffect]);
 
+  // Handle window resize to recalculate canvas size
+  useEffect(() => {
+    const handleResize = () => {
+      if (imageState.originalImage) {
+        console.log('Window resized, recalculating canvas size...');
+        // Use a timeout to avoid too frequent recalculations
+        setTimeout(() => {
+          debouncedApplyEffect(imageState.originalImage, selectedEffect, effectParams[selectedEffect]);
+        }, 100);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [imageState.originalImage, selectedEffect, effectParams, debouncedApplyEffect]);
+
   return (
     <div className="h-screen bg-background text-foreground">
-      {/* Desktop Layout */}
-      <div className="hidden lg:flex h-full">
-        <EffectControlPanel
-          imageState={imageState}
-          selectedEffect={selectedEffect}
-          effectParams={effectParams}
-          onLoadImage={loadImage}
-          onEffectChange={setSelectedEffect}
-          onParamsChange={updateEffectParams}
-          isMobile={false}
-        />
-        <CanvasArea
-          canvasRef={canvasRef}
-          imageState={imageState}
-          onDownload={downloadImage}
-          effectName={selectedEffect}
-          isMobile={false}
-        />
-      </div>
+      {/* Responsive Layout with Single Canvas */}
+      <div className="h-full flex flex-col lg:flex-row">
+        
+        {/* Desktop Sidebar / Mobile Top Section */}
+        <div className="lg:w-80 lg:h-full h-1/2 lg:h-auto flex flex-col lg:border-r border-b lg:border-b-0 border-sidebar-border">
+          
+          {/* Desktop: Full Control Panel */}
+          <div className="hidden lg:block h-full">
+            <EffectControlPanel
+              imageState={imageState}
+              selectedEffect={selectedEffect}
+              effectParams={effectParams}
+              onLoadImage={loadImage}
+              onEffectChange={setSelectedEffect}
+              onParamsChange={updateEffectParams}
+              isMobile={false}
+            />
+          </div>
+          
+          {/* Mobile: Split Controls */}
+          <div className="lg:hidden h-full flex flex-col">
+            {/* URL and Effects - 60% */}
+            <div className="h-3/5 border-b border-border">
+              <EffectControlPanel
+                imageState={imageState}
+                selectedEffect={selectedEffect}
+                effectParams={effectParams}
+                onLoadImage={loadImage}
+                onEffectChange={setSelectedEffect}
+                onParamsChange={updateEffectParams}
+                isMobile={true}
+                showOnlyUrlAndEffects={true}
+              />
+            </div>
+            
+            {/* Settings - 40% */}
+            <div className="h-2/5">
+              <EffectControlPanel
+                imageState={imageState}
+                selectedEffect={selectedEffect}
+                effectParams={effectParams}
+                onLoadImage={loadImage}
+                onEffectChange={setSelectedEffect}
+                onParamsChange={updateEffectParams}
+                isMobile={true}
+                showOnlySettings={true}
+              />
+            </div>
+          </div>
+        </div>
 
-      {/* Mobile Layout */}
-      <div className="lg:hidden h-full flex flex-col">
-        {/* Image Area - 50% */}
-        <div className="h-1/2 border-b border-border">
+        {/* Single Canvas Area - Responsive for both layouts */}
+        <div className="flex-1 h-1/2 lg:h-full">
           <CanvasArea
             canvasRef={canvasRef}
             imageState={imageState}
             onDownload={downloadImage}
             effectName={selectedEffect}
-            isMobile={true}
           />
         </div>
         
-        {/* Controls Area - 50% split into URL/Effects (30%) and Settings (20%) */}
-        <div className="h-1/2 flex flex-col">
-          {/* URL and Effect Selection - 60% of bottom half (30% of total) */}
-          <div className="h-3/5 border-b border-border">
-            <EffectControlPanel
-              imageState={imageState}
-              selectedEffect={selectedEffect}
-              effectParams={effectParams}
-              onLoadImage={loadImage}
-              onEffectChange={setSelectedEffect}
-              onParamsChange={updateEffectParams}
-              isMobile={true}
-              showOnlyUrlAndEffects={true}
-            />
-          </div>
-          
-          {/* Settings Area - 40% of bottom half (20% of total) */}
-          <div className="h-2/5">
-            <EffectControlPanel
-              imageState={imageState}
-              selectedEffect={selectedEffect}
-              effectParams={effectParams}
-              onLoadImage={loadImage}
-              onEffectChange={setSelectedEffect}
-              onParamsChange={updateEffectParams}
-              isMobile={true}
-              showOnlySettings={true}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

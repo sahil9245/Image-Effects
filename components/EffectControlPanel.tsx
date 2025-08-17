@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Slider } from './ui/slider';
@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { ImageState, EffectType, EffectParams } from './ImageEffectsProcessor';
@@ -45,10 +46,19 @@ export function EffectControlPanel({
   showOnlyUrlAndEffects = false,
   showOnlySettings = false
 }: EffectControlPanelProps) {
-  const [urlInput, setUrlInput] = useState('');
+  // Use shared state synchronized across mobile/desktop layouts
+  const [localUrlInput, setLocalUrlInput] = useState(imageState.imageUrl);
+  
+  // Sync local input with imageState when it changes (e.g., after successful load)
+  useEffect(() => {
+    setLocalUrlInput(imageState.imageUrl);
+  }, [imageState.imageUrl]);
+  
+  // Create unique ID suffix based on isMobile prop
+  const idSuffix = isMobile ? '-mobile' : '-desktop';
 
   const handleLoadClick = () => {
-    onLoadImage(urlInput);
+    onLoadImage(localUrlInput);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -405,20 +415,20 @@ export function EffectControlPanel({
 
           {/* URL Input Section */}
           <div className="space-y-3">
-            <Label htmlFor="image-url" className="text-sidebar-foreground text-sm font-medium">Image URL</Label>
+            <Label htmlFor={`image-url${idSuffix}`} className="text-sidebar-foreground text-sm font-medium">Image URL</Label>
             <div className="flex gap-3">
               <Input
-                id="image-url"
+                id={`image-url${idSuffix}`}
                 type="url"
                 placeholder="https://example.com/image.jpg"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
+                value={localUrlInput}
+                onChange={(e) => setLocalUrlInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="bg-input-background border-border text-foreground placeholder:text-muted-foreground text-sm h-10"
               />
               <Button 
                 onClick={handleLoadClick}
-                disabled={imageState.isLoading || !urlInput.trim()}
+                disabled={imageState.isLoading || !localUrlInput.trim()}
                 size="sm"
                 className="bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground whitespace-nowrap px-4 h-10"
               >
@@ -517,19 +527,19 @@ export function EffectControlPanel({
       <div className="space-y-6 flex-1">
         {/* URL Input Section */}
         <div className="space-y-3">
-          <Label htmlFor="image-url" className="text-sidebar-foreground">Image URL</Label>
+          <Label htmlFor={`image-url${idSuffix}`} className="text-sidebar-foreground">Image URL</Label>
           <Input
-            id="image-url"
+            id={`image-url${idSuffix}`}
             type="url"
             placeholder="https://example.com/image.jpg"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
+            value={localUrlInput}
+            onChange={(e) => setLocalUrlInput(e.target.value)}
             onKeyPress={handleKeyPress}
             className="bg-input-background border-border text-foreground placeholder:text-muted-foreground"
           />
           <Button 
             onClick={handleLoadClick}
-            disabled={imageState.isLoading || !urlInput.trim()}
+            disabled={imageState.isLoading || !localUrlInput.trim()}
             className="w-full bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground"
           >
             {imageState.isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -595,25 +605,33 @@ export function EffectControlPanel({
         </div>
       </div>
 
-      {/* Instructions - Hidden on mobile as requested */}
+      {/* Instructions Accordion - Hidden on mobile, positioned at bottom */}
       {!isMobile && (
         <div className="mt-auto">
           <Separator className="mb-4 bg-sidebar-border" />
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-sidebar-foreground">Instructions</h3>
-            <ul className="text-muted-foreground text-sm space-y-1">
-              <li>• Load an image using a public URL</li>
-              <li>• Select an effect from the grid above</li>
-              <li>• Adjust settings for real-time preview</li>
-              <li>• Download your processed image</li>
-            </ul>
-            
-            <div className="mt-3 p-3 bg-muted/20 rounded-md">
-              <p className="text-xs text-muted-foreground">
-                <strong>Note:</strong> Some URLs may not work due to CORS restrictions.
-              </p>
-            </div>
-          </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="instructions" className="border-0">
+              <AccordionTrigger className="text-sm font-medium text-sidebar-foreground hover:no-underline py-2 px-0">
+                Instructions
+              </AccordionTrigger>
+              <AccordionContent className="pb-2">
+                <div className="space-y-3">
+                  <ul className="text-muted-foreground text-sm space-y-1">
+                    <li>• Load an image using a public URL</li>
+                    <li>• Select an effect from the grid above</li>
+                    <li>• Adjust settings for real-time preview</li>
+                    <li>• Download your processed image</li>
+                  </ul>
+                  
+                  <div className="p-3 bg-muted/20 rounded-md">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Note:</strong> Some URLs may not work due to CORS restrictions.
+                    </p>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       )}
     </div>

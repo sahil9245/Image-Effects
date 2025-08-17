@@ -10,71 +10,74 @@ interface CanvasAreaProps {
   imageState: ImageState;
   onDownload: () => void;
   effectName: string;
-  isMobile?: boolean;
 }
 
-export function CanvasArea({ canvasRef, imageState, onDownload, effectName, isMobile = false }: CanvasAreaProps) {
+export function CanvasArea({ canvasRef, imageState, onDownload, effectName }: CanvasAreaProps) {
   return (
-    <div className={`${isMobile ? 'h-full' : 'flex-1'} bg-background relative overflow-hidden`}>
-      {/* Header with download button */}
-      <div className={`absolute ${isMobile ? 'top-2 right-2' : 'top-4 right-4'} z-10 flex gap-2`}>
+    <div className="flex-1 lg:flex-1 bg-background relative overflow-hidden">
+      {/* Header with download button - Responsive positioning */}
+      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 lg:top-6 lg:right-6 z-10 flex gap-1.5 sm:gap-2">
         {imageState.isProcessing && (
-          <div className={`flex items-center gap-2 bg-card/90 backdrop-blur-sm ${isMobile ? 'px-2 py-1' : 'px-3 py-2'} rounded-md border border-border`}>
-            <Loader2 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} animate-spin text-primary`} />
-            {!isMobile && <span className="text-sm text-muted-foreground">Processing...</span>}
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-card/90 backdrop-blur-sm px-2 py-1 sm:px-3 sm:py-2 rounded-md border border-border">
+            <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-primary" />
+            <span className="hidden sm:inline text-sm text-muted-foreground">Processing...</span>
           </div>
         )}
         <Button
           onClick={onDownload}
           disabled={!imageState.originalImage || imageState.isProcessing}
           variant="outline"
-          size={isMobile ? "sm" : "sm"}
+          size="sm"
           className="bg-card/90 hover:bg-accent border-border text-foreground backdrop-blur-sm"
         >
-          <Download className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} ${isMobile ? '' : 'mr-2'}`} />
-          {!isMobile && 'Download PNG'}
+          <Download className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+          <span className="hidden sm:inline">Download PNG</span>
         </Button>
       </div>
 
-      {/* Canvas Container */}
-      <div className={`h-full flex items-center justify-center ${isMobile ? 'p-2' : 'p-8'}`}>
+      {/* Canvas Container - Responsive padding and sizing */}
+      <div className="h-full flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10">
         {!imageState.originalImage && !imageState.isLoading ? (
-          // Empty state
-          <div className="text-center max-w-md">
+          // Empty state - Responsive sizing
+          <div className="text-center w-full max-w-sm sm:max-w-md md:max-w-lg">
             <Card className="border-dashed border-2 bg-card border-border">
-              <CardContent className={`${isMobile ? 'p-6' : 'p-12'}`}>
+              <CardContent className="p-6 sm:p-8 md:p-10 lg:p-12">
                 <div className="text-muted-foreground">
-                  <ImageIcon className={`${isMobile ? 'w-8 h-8' : 'w-16 h-16'} mx-auto mb-4 text-muted-foreground`} />
-                  <h3 className={`${isMobile ? 'text-sm' : 'text-lg'} font-medium text-foreground mb-2`}>No Image Loaded</h3>
-                  <p className={`text-muted-foreground ${isMobile ? 'text-xs' : ''}`}>
-                    Enter an image URL {isMobile ? 'below' : 'in the sidebar'} to get started
+                  <ImageIcon className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-sm sm:text-base md:text-lg font-medium text-foreground mb-2">No Image Loaded</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Enter an image URL <span className="lg:hidden">below</span><span className="hidden lg:inline">in the sidebar</span> to get started
                   </p>
                 </div>
               </CardContent>
             </Card>
           </div>
         ) : imageState.isLoading ? (
-          // Loading state
+          // Loading state - Responsive sizing
           <div className="text-center">
-            <Loader2 className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} animate-spin mx-auto mb-4 text-primary`} />
-            <p className={`text-foreground ${isMobile ? 'text-sm' : ''}`}>Processing image...</p>
-            {!isMobile && <p className="text-xs text-muted-foreground mt-2">This may take a moment for large images</p>}
+            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-sm sm:text-base text-foreground">Processing image...</p>
+            <p className="hidden sm:block text-xs text-muted-foreground mt-2">This may take a moment for large images</p>
           </div>
         ) : (
-          // Canvas with image
-          <div className="max-w-full max-h-full flex items-center justify-center">
-            <div className="relative">
+          // Canvas with image - Responsive container and sizing
+          <div className="w-full h-full max-w-full max-h-full flex items-center justify-center">
+            <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
               <canvas
                 ref={canvasRef}
-                className="max-w-full max-h-full border border-border rounded-lg shadow-2xl bg-card"
+                className="border border-border rounded-lg shadow-lg sm:shadow-xl md:shadow-2xl bg-card"
                 style={{ 
-                  imageRendering: 'crisp-edges'
+                  imageRendering: 'crisp-edges',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  display: 'block',
+                  margin: 'auto'
                 }}
               />
               
-              {/* Effect overlay badge */}
-              <div className={`absolute ${isMobile ? 'top-1 left-1' : 'top-2 left-2'}`}>
-                <Badge className={`bg-card/90 border-border text-foreground backdrop-blur-sm ${isMobile ? 'text-xs px-2 py-1' : ''}`}>
+              {/* Effect overlay badge - Responsive positioning and sizing */}
+              <div className="absolute top-1 left-1 sm:top-2 sm:left-2 md:top-3 md:left-3">
+                <Badge className="bg-card/90 border-border text-foreground backdrop-blur-sm text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5">
                   {effectName.charAt(0).toUpperCase() + effectName.slice(1).replace('-', ' ')}
                 </Badge>
               </div>
@@ -83,23 +86,21 @@ export function CanvasArea({ canvasRef, imageState, onDownload, effectName, isMo
         )}
       </div>
 
-      {/* Bottom info bar */}
-      {imageState.originalImage && !isMobile && (
-        <div className="absolute bottom-4 left-4">
-          <Badge variant="outline" className="bg-card/90 border-border text-foreground backdrop-blur-sm">
+      {/* Bottom info bar - Responsive positioning and visibility */}
+      {imageState.originalImage && (
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 lg:bottom-6 lg:left-6">
+          <Badge variant="outline" className="bg-card/90 border-border text-foreground backdrop-blur-sm text-xs sm:text-sm">
             {imageState.originalImage.width} × {imageState.originalImage.height} px
           </Badge>
         </div>
       )}
 
-      {/* Watermark/branding - only on desktop */}
-      {!isMobile && (
-        <div className="absolute bottom-4 right-4">
-          <Badge variant="outline" className="bg-card/90 border-border text-muted-foreground backdrop-blur-sm text-xs">
-            Image Effects Pro
-          </Badge>
-        </div>
-      )}
+      {/* Watermark/branding - Responsive positioning */}
+      <div className="hidden sm:block absolute bottom-2 right-2 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4 lg:bottom-6 lg:right-6">
+        <Badge variant="outline" className="bg-card/90 border-border text-muted-foreground backdrop-blur-sm text-xs">
+          Image Effects Pro
+        </Badge>
+      </div>
     </div>
   );
 }
