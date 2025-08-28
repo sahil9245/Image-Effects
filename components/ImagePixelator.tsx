@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { ControlPanel } from './ControlPanel';
 import { CanvasArea } from './CanvasArea';
+import { ImageState } from './ImageEffectsProcessor';
 
-export interface ImageState {
+// Interface for the pixelator-specific state
+interface PixelatorImageState {
   originalImage: HTMLImageElement | null;
   pixelSize: number;
   isLoading: boolean;
@@ -11,13 +13,22 @@ export interface ImageState {
 }
 
 export function ImagePixelator() {
-  const [imageState, setImageState] = useState<ImageState>({
+  const [pixelatorState, setPixelatorState] = useState<PixelatorImageState>({
     originalImage: null,
     pixelSize: 10,
     isLoading: false,
     error: null,
     imageUrl: ''
   });
+
+  // Convert to ImageState format for CanvasArea
+  const imageState: ImageState = {
+    originalImage: pixelatorState.originalImage,
+    isLoading: pixelatorState.isLoading,
+    isProcessing: false,
+    error: pixelatorState.error,
+    imageUrl: pixelatorState.imageUrl
+  };
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -101,16 +112,16 @@ export function ImagePixelator() {
 
   const loadImage = (url: string) => {
     if (!url.trim()) {
-      setImageState(prev => ({ ...prev, error: 'Please enter a valid image URL' }));
+      setPixelatorState(prev => ({ ...prev, error: 'Please enter a valid image URL' }));
       return;
     }
 
     if (!validateUrl(url)) {
-      setImageState(prev => ({ ...prev, error: 'Invalid URL format. Please enter a complete URL starting with http:// or https://' }));
+      setPixelatorState(prev => ({ ...prev, error: 'Invalid URL format. Please enter a complete URL starting with http:// or https://' }));
       return;
     }
 
-    setImageState(prev => ({ 
+    setPixelatorState(prev => ({ 
       ...prev, 
       isLoading: true, 
       error: null, 
@@ -123,7 +134,7 @@ export function ImagePixelator() {
     const loadWithoutCORS = () => {
       const imgNoCORS = new Image();
       imgNoCORS.onload = () => {
-        setImageState(prev => ({ 
+        setPixelatorState(prev => ({ 
           ...prev, 
           originalImage: imgNoCORS, 
           isLoading: false, 
@@ -131,7 +142,7 @@ export function ImagePixelator() {
         }));
       };
       imgNoCORS.onerror = () => {
-        setImageState(prev => ({ 
+        setPixelatorState(prev => ({ 
           ...prev, 
           isLoading: false, 
           error: 'Failed to load image. This may be due to CORS restrictions or the image URL being invalid. Try using images from services like Unsplash, Picsum, or imgur that support cross-origin requests.' 
@@ -144,7 +155,7 @@ export function ImagePixelator() {
     img.crossOrigin = 'anonymous';
     
     img.onload = () => {
-      setImageState(prev => ({ 
+      setPixelatorState(prev => ({ 
         ...prev, 
         originalImage: img, 
         isLoading: false, 
@@ -161,7 +172,7 @@ export function ImagePixelator() {
   };
 
   const handlePixelSizeChange = (size: number) => {
-    setImageState(prev => ({ ...prev, pixelSize: size }));
+    setPixelatorState(prev => ({ ...prev, pixelSize: size }));
   };
 
   const downloadImage = () => {
@@ -174,7 +185,7 @@ export function ImagePixelator() {
       link.href = canvas.toDataURL();
       link.click();
     } catch (error) {
-      setImageState(prev => ({ 
+      setPixelatorState(prev => ({ 
         ...prev, 
         error: 'Unable to download image. This may be due to CORS restrictions on the source image.' 
       }));
@@ -183,24 +194,116 @@ export function ImagePixelator() {
 
   // Re-pixelate when pixel size changes or image loads
   useEffect(() => {
-    if (imageState.originalImage) {
-      pixelateImage(imageState.originalImage, imageState.pixelSize);
+    if (pixelatorState.originalImage) {
+      pixelateImage(pixelatorState.originalImage, pixelatorState.pixelSize);
     }
-  }, [imageState.originalImage, imageState.pixelSize]);
+  }, [pixelatorState.originalImage, pixelatorState.pixelSize]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      <ControlPanel
-        imageState={imageState}
-        onLoadImage={loadImage}
-        onPixelSizeChange={handlePixelSizeChange}
-      />
-      <CanvasArea
-        canvasRef={canvasRef}
-        imageState={imageState}
-        onDownload={downloadImage}
-        effectName="pixelate"
-      />
+    <div className="h-screen bg-background text-foreground">
+      {/* Responsive Layout */}
+      <div className="h-full flex flex-col lg:flex-row">
+        
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block lg:w-80 lg:h-full lg:border-r border-sidebar-border">
+          <ControlPanel
+            imageState={pixelatorState}
+            onLoadImage={loadImage}
+            onPixelSizeChange={handlePixelSizeChange}
+          />
+        </div>
+
+        {/* Canvas Area - Single instance that scales responsively */}
+        <div className="flex-1 h-1/2 lg:h-full border-b lg:border-b-0 border-border">
+          <CanvasArea
+            canvasRef={canvasRef}
+            imageState={imageState}
+            onDownload={downloadImage}
+            effectName="pixelate"
+          />
+        </div>
+        
+        {/* Mobile Controls */}
+        <div className="lg:hidden h-1/2 flex flex-col overflow-y-auto">
+          {/* URL Section */}
+          <div className="border-b border-border p-4 flex-shrink-0">
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-foreground">Image URL</h3>
+              <input
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                value={pixelatorState.imageUrl}
+                onChange={(e) => {
+                  setPixelatorState(prev => ({ ...prev, imageUrl: e.target.value }));
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    loadImage(e.currentTarget.value);
+                  }
+                }}
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
+              />
+              <button
+                onClick={() => loadImage(pixelatorState.imageUrl)}
+                disabled={pixelatorState.isLoading || !pixelatorState.imageUrl.trim()}
+                className="w-full px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {pixelatorState.isLoading ? 'Loading...' : 'Load Image'}
+              </button>
+            </div>
+          </div>
+          
+          {/* Effect Type Section */}
+          <div className="border-b border-border p-4 flex-shrink-0">
+            <div>
+              <h3 className="text-sm font-medium text-foreground">Effect Type</h3>
+              <p className="text-xs text-muted-foreground">Pixelate</p>
+            </div>
+          </div>
+          
+          {/* Pixelate Settings */}
+          <div className="p-4 flex-1 min-h-0">
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-foreground">Pixelate Settings</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Pixel Size</span>
+                  <span className="text-xs bg-secondary px-2 py-1 rounded font-mono">
+                    {pixelatorState.pixelSize}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="120"
+                  value={pixelatorState.pixelSize}
+                  onChange={(e) => handlePixelSizeChange(Number(e.target.value))}
+                  className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                  disabled={!pixelatorState.originalImage}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1px (Original)</span>
+                  <span>120px (Very Pixelated)</span>
+                </div>
+              </div>
+              
+              {/* Status Messages */}
+              {pixelatorState.error && (
+                <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
+                  {pixelatorState.error}
+                </div>
+              )}
+              
+              {pixelatorState.originalImage && !pixelatorState.isLoading && (
+                <div className="p-2 bg-green-500/10 border border-green-500/20 rounded text-xs text-green-700">
+                  Image loaded ({pixelatorState.originalImage.width}×{pixelatorState.originalImage.height})
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+      </div>
     </div>
   );
 }

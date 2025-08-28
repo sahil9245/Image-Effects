@@ -406,8 +406,8 @@ export function EffectControlPanel({
   // Mobile URL and Effects section
   if (isMobile && showOnlyUrlAndEffects) {
     return (
-      <div className="h-full bg-sidebar border-b border-sidebar-border p-4 flex flex-col">
-        <div className="flex-1 space-y-4 min-h-0">
+      <div className="bg-sidebar border-b border-sidebar-border p-4">
+        <div className="space-y-4">
           {/* Compact header */}
           <div className="text-center">
             <h2 className="text-lg font-medium text-sidebar-foreground">Image Effects</h2>
@@ -445,23 +445,79 @@ export function EffectControlPanel({
                 {effectConfig[selectedEffect].name}
               </span>
             </Label>
-            <div className="flex gap-3 overflow-x-auto pb-2 px-1">
-              {Object.entries(effectConfig).map(([key, config]) => (
-                <Button
-                  key={key}
-                  variant={selectedEffect === key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onEffectChange(key as EffectType)}
-                  className={`flex items-center justify-center p-4 h-12 w-12 text-lg rounded-lg min-w-[48px] ${
-                    selectedEffect === key 
-                      ? 'bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground border-sidebar-primary shadow-sm' 
-                      : 'bg-sidebar-accent hover:bg-sidebar-accent/80 text-sidebar-accent-foreground border-sidebar-border'
-                  }`}
-                  title={config.name}
-                >
-                  <span>{config.icon}</span>
-                </Button>
-              ))}
+            <div className="flex gap-2 overflow-x-auto pb-2 px-1 w-full" style={{minHeight: '52px'}}>
+              <Button
+                variant={selectedEffect === 'pixelate' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('pixelate')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Pixelate"
+              >
+                <span>▦</span>
+              </Button>
+              <Button
+                variant={selectedEffect === 'halftone' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('halftone')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Halftone"
+              >
+                <span>●</span>
+              </Button>
+              <Button
+                variant={selectedEffect === 'blur' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('blur')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Blur"
+              >
+                <span>◐</span>
+              </Button>
+              <Button
+                variant={selectedEffect === 'noise' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('noise')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Noise"
+              >
+                <span>∴</span>
+              </Button>
+              <Button
+                variant={selectedEffect === 'posterize' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('posterize')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Posterize"
+              >
+                <span>▊</span>
+              </Button>
+              <Button
+                variant={selectedEffect === 'glass-refraction' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('glass-refraction')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Glass"
+              >
+                <span>◇</span>
+              </Button>
+              <Button
+                variant={selectedEffect === 'emboss' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('emboss')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Emboss"
+              >
+                <span>◈</span>
+              </Button>
+              <Button
+                variant={selectedEffect === 'vintage' ? "default" : "outline"}
+                size="sm"
+                onClick={() => onEffectChange('vintage')}
+                className="flex-shrink-0 flex items-center justify-center p-3 h-12 w-12 text-lg rounded-lg"
+                title="Vintage"
+              >
+                <span>🟤</span>
+              </Button>
             </div>
           </div>
 
@@ -498,9 +554,9 @@ export function EffectControlPanel({
   // Mobile Settings section
   if (isMobile && showOnlySettings) {
     return (
-      <div className="h-full bg-sidebar p-4 flex flex-col">
-        <div className="flex-1 space-y-3 min-h-0">
-          <div className="flex items-center justify-between flex-shrink-0">
+      <div className="bg-sidebar p-4 pb-8">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <Label className="text-sidebar-foreground text-sm font-medium">
               {effectConfig[selectedEffect].name} Settings
             </Label>
@@ -508,7 +564,7 @@ export function EffectControlPanel({
               {effectConfig[selectedEffect].icon}
             </span>
           </div>
-          <div className="flex-1 space-y-3 overflow-y-auto">
+          <div className="space-y-4">
             {renderEffectControls()}
           </div>
         </div>

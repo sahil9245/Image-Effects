@@ -107,7 +107,7 @@ export function ImageEffectsProcessor() {
 
     console.log('Drawing to canvas:', image.width, 'x', image.height);
 
-    // Get viewport-aware canvas sizing
+    // Use original image dimensions for canvas internal size
     const { width: originalWidth, height: originalHeight } = image;
     
     // Ensure minimum dimensions
@@ -115,218 +115,22 @@ export function ImageEffectsProcessor() {
       console.error('Invalid image dimensions:', originalWidth, originalHeight);
       return;
     }
+
+    // Set reasonable max dimensions for performance
+    const MAX_DIMENSION = 1200;
+    let width = originalWidth;
+    let height = originalHeight;
     
-    // Get canvas container dimensions - look for the main canvas area
-    let container = canvas.parentElement;
-    let containerRect = null;
-    
-    // Walk up the DOM to find a container with substantial size
-    while (container && container !== document.body) {
-      const rect = container.getBoundingClientRect();
-      if (rect.width > 200 && rect.height > 200) {
-        containerRect = rect;
-        break;
-      }
-      container = container.parentElement;
-    }
-    
-    let availableWidth, availableHeight;
-    
-    // Get viewport dimensions for responsive calculations
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    // Detect layout type based on viewport size
-    const isDesktopLayout = viewportWidth >= 1024; // lg breakpoint in Tailwind
-    
-    // Define responsive breakpoints and sizing strategies with layout-aware adjustments
-    const getResponsiveConfig = () => {
-      if (viewportWidth >= 1920) {
-        // Large desktop monitors (27"+ displays)
-        return {
-          spaceUsage: isDesktopLayout ? 0.85 : 0.9, // More space on mobile layout
-          minWidth: 800,
-          minHeight: 600,
-          name: 'large-desktop',
-          layout: isDesktopLayout ? 'sidebar' : 'stacked'
-        };
-      } else if (viewportWidth >= 1366) {
-        // Standard desktop/laptop screens
-        return {
-          spaceUsage: isDesktopLayout ? 0.8 : 0.85,
-          minWidth: 600,
-          minHeight: 450,
-          name: 'desktop',
-          layout: isDesktopLayout ? 'sidebar' : 'stacked'
-        };
-      } else if (viewportWidth >= 1024) {
-        // Large tablets landscape - edge case between layouts
-        return {
-          spaceUsage: isDesktopLayout ? 0.75 : 0.8,
-          minWidth: 500,
-          minHeight: 350,
-          name: 'tablet-large',
-          layout: isDesktopLayout ? 'sidebar' : 'stacked'
-        };
-      } else if (viewportWidth >= 768) {
-        // Tablets portrait / small laptops - always stacked
-        return {
-          spaceUsage: 0.85, // More space since controls are above
-          minWidth: 400,
-          minHeight: 300,
-          name: 'tablet',
-          layout: 'stacked'
-        };
-      } else {
-        // Mobile phones - always stacked
-        return {
-          spaceUsage: 0.9, // Maximum space on mobile for prominence
-          minWidth: 280,
-          minHeight: 200,
-          name: 'mobile',
-          layout: 'stacked'
-        };
-      }
-    };
-    
-    const responsiveConfig = getResponsiveConfig();
-    
-    if (containerRect) {
-      // Layout-aware space calculations
-      if (responsiveConfig.layout === 'sidebar') {
-        // Desktop sidebar layout: account for sidebar width (320px) and padding
-        const effectiveViewportWidth = viewportWidth - 320; // sidebar width
-        const widthRatio = containerRect.width / effectiveViewportWidth;
-        
-        // Apply responsive sizing with layout awareness
-        availableWidth = containerRect.width * responsiveConfig.spaceUsage;
-        availableHeight = containerRect.height * responsiveConfig.spaceUsage;
-        
-        console.log('Desktop sidebar layout detected:', {
-          sidebarWidth: 320,
-          effectiveViewport: effectiveViewportWidth,
-          widthRatio: widthRatio.toFixed(3)
-        });
-      } else {
-        // Mobile stacked layout: full width available, but height is split
-        const mobileControlsHeight = viewportHeight * 0.5; // controls take 50% on mobile
-        const effectiveCanvasHeight = viewportHeight - mobileControlsHeight;
-        
-        // Use more aggressive space usage for stacked layout
-        availableWidth = containerRect.width * responsiveConfig.spaceUsage;
-        availableHeight = Math.min(
-          containerRect.height * responsiveConfig.spaceUsage,
-          effectiveCanvasHeight * 0.9 // Use 90% of available canvas area
-        );
-        
-        console.log('Mobile stacked layout detected:', {
-          controlsHeight: mobileControlsHeight,
-          effectiveCanvasHeight: effectiveCanvasHeight,
-          adjustedHeight: availableHeight
-        });
-      }
-      
-      // Ensure minimum sizes for the current breakpoint
-      availableWidth = Math.max(availableWidth, responsiveConfig.minWidth);
-      availableHeight = Math.max(availableHeight, responsiveConfig.minHeight);
-      
-      console.log('Layout-aware canvas sizing:', {
-        viewport: `${viewportWidth}×${viewportHeight}`,
-        breakpoint: responsiveConfig.name,
-        layout: responsiveConfig.layout,
-        containerSize: `${containerRect.width}×${containerRect.height}`,
-        spaceUsage: `${responsiveConfig.spaceUsage * 100}%`,
-        availableSpace: `${availableWidth}×${availableHeight}`,
-        originalImage: `${originalWidth}×${originalHeight}`
-      });
-    } else {
-      // Fallback: Use responsive viewport calculations with layout awareness
-      if (responsiveConfig.layout === 'sidebar') {
-        availableWidth = (viewportWidth - 320) * responsiveConfig.spaceUsage; // Account for sidebar
-        availableHeight = viewportHeight * responsiveConfig.spaceUsage;
-      } else {
-        availableWidth = viewportWidth * responsiveConfig.spaceUsage;
-        availableHeight = (viewportHeight * 0.5) * responsiveConfig.spaceUsage; // Account for stacked layout
-      }
-      
-      console.log('Using layout-aware viewport fallback:', {
-        viewport: `${viewportWidth}×${viewportHeight}`,
-        breakpoint: responsiveConfig.name,
-        layout: responsiveConfig.layout,
-        availableSpace: `${availableWidth}×${availableHeight}`
-      });
-    }
-    
-    // Dynamic performance limits based on viewport size
-    const getPerformanceLimit = () => {
-      if (viewportWidth >= 1920) return 2000; // Large displays can handle more
-      if (viewportWidth >= 1366) return 1600; // Standard desktop
-      if (viewportWidth >= 1024) return 1200; // Tablets
-      return 800; // Mobile - keep it performant
-    };
-    
-    const MAX_DIMENSION = getPerformanceLimit();
-    
-    // Calculate responsive scale based on viewport and container
-    const scaleByWidth = availableWidth / originalWidth;
-    const scaleByHeight = availableHeight / originalHeight;
-    
-    // Use the smaller scale to ensure it fits
-    let viewportScale = Math.min(scaleByWidth, scaleByHeight);
-    
-    // Dynamic upscaling limits based on screen size
-    const getMaxUpscale = () => {
-      if (viewportWidth >= 1920) return 3; // Large displays - allow more upscaling
-      if (viewportWidth >= 1366) return 2.5; // Desktop - moderate upscaling
-      if (viewportWidth >= 1024) return 2; // Tablet - conservative upscaling
-      return 1.5; // Mobile - minimal upscaling for performance
-    };
-    
-    viewportScale = Math.min(viewportScale, getMaxUpscale());
-    
-    console.log('Responsive scale calculation:', {
-      breakpoint: responsiveConfig.name,
-      viewport: `${viewportWidth}×${viewportHeight}`,
-      scaleByWidth: scaleByWidth.toFixed(3),
-      scaleByHeight: scaleByHeight.toFixed(3),
-      maxUpscale: getMaxUpscale(),
-      finalScale: viewportScale.toFixed(3),
-      targetWidth: Math.round(originalWidth * viewportScale),
-      targetHeight: Math.round(originalHeight * viewportScale),
-      performanceLimit: MAX_DIMENSION
-    });
-    
-    // Apply viewport scaling
-    let width = Math.round(originalWidth * viewportScale);
-    let height = Math.round(originalHeight * viewportScale);
-    
-    // Apply performance limits if still too large
+    // Scale down only if too large (maintain aspect ratio)
     if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-      const performanceScale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-      width = Math.round(width * performanceScale);
-      height = Math.round(height * performanceScale);
-      console.log('Applied performance scaling:', performanceScale.toFixed(3));
+      const scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+      console.log('Applied performance scaling:', scale.toFixed(3));
     }
 
-    // Ensure prominent minimum sizes for professional appearance
-    const MIN_WIDTH = 400;  // Much larger minimum for desktop prominence
-    const MIN_HEIGHT = 300;
-    
-    if (width < MIN_WIDTH || height < MIN_HEIGHT) {
-      const minScale = Math.max(MIN_WIDTH / width, MIN_HEIGHT / height);
-      width = Math.round(width * minScale);
-      height = Math.round(height * minScale);
-      console.log('Applied minimum size scaling for prominence:', minScale.toFixed(3));
-    }
-
-    // Ensure final dimensions are substantial
-    width = Math.max(MIN_WIDTH, width);
-    height = Math.max(MIN_HEIGHT, height);
-    
-    console.log('Image scaling:', {
+    console.log('Canvas sizing:', {
       original: `${originalWidth}x${originalHeight}`,
-      viewport: `${availableWidth}x${availableHeight}`,
-      viewportScale: viewportScale.toFixed(3),
       final: `${width}x${height}`
     });
 
@@ -334,14 +138,14 @@ export function ImageEffectsProcessor() {
     canvas.width = width;
     canvas.height = height;
     
-    // Set responsive CSS dimensions for proper display
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    // Let CSS handle responsive scaling - canvas behaves like an image
+    canvas.style.width = 'auto';
+    canvas.style.height = 'auto';
     canvas.style.maxWidth = '100%';
     canvas.style.maxHeight = '100%';
     canvas.style.display = 'block';
     canvas.style.objectFit = 'contain';
-    canvas.style.margin = 'auto'; // Center the canvas
+    canvas.style.margin = 'auto';
     
     console.log('Canvas size set to:', width, 'x', height);
     console.log('Canvas CSS dimensions set to:', canvas.style.width, 'x', canvas.style.height);
@@ -1011,9 +815,12 @@ export function ImageEffectsProcessor() {
     const handleResize = () => {
       if (imageState.originalImage) {
         console.log('Window resized, recalculating canvas size...');
+        const currentImage = imageState.originalImage;
         // Use a timeout to avoid too frequent recalculations
         setTimeout(() => {
-          debouncedApplyEffect(imageState.originalImage, selectedEffect, effectParams[selectedEffect]);
+          if (currentImage) {
+            debouncedApplyEffect(currentImage, selectedEffect, effectParams[selectedEffect]);
+          }
         }, 100);
       }
     };
@@ -1024,14 +831,36 @@ export function ImageEffectsProcessor() {
 
   return (
     <div className="h-screen bg-background text-foreground">
-      {/* Responsive Layout with Single Canvas */}
+      {/* Single responsive layout */}
       <div className="h-full flex flex-col lg:flex-row">
         
-        {/* Desktop Sidebar / Mobile Top Section */}
-        <div className="lg:w-80 lg:h-full h-1/2 lg:h-auto flex flex-col lg:border-r border-b lg:border-b-0 border-sidebar-border">
-          
-          {/* Desktop: Full Control Panel */}
-          <div className="hidden lg:block h-full">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block lg:w-80 lg:h-full lg:border-r border-sidebar-border">
+          <EffectControlPanel
+            imageState={imageState}
+            selectedEffect={selectedEffect}
+            effectParams={effectParams}
+            onLoadImage={loadImage}
+            onEffectChange={setSelectedEffect}
+            onParamsChange={updateEffectParams}
+            isMobile={false}
+          />
+        </div>
+
+        {/* Canvas Area - Single instance that scales responsively */}
+        <div className="flex-1 h-1/2 lg:h-full border-b lg:border-b-0 border-border">
+          <CanvasArea
+            canvasRef={canvasRef}
+            imageState={imageState}
+            onDownload={downloadImage}
+            effectName={selectedEffect}
+          />
+        </div>
+        
+        {/* Mobile Controls */}
+        <div className="lg:hidden h-1/2 flex flex-col overflow-y-auto">
+          {/* URL and Effects */}
+          <div className="flex-shrink-0 border-b border-border">
             <EffectControlPanel
               imageState={imageState}
               selectedEffect={selectedEffect}
@@ -1039,50 +868,24 @@ export function ImageEffectsProcessor() {
               onLoadImage={loadImage}
               onEffectChange={setSelectedEffect}
               onParamsChange={updateEffectParams}
-              isMobile={false}
+              isMobile={true}
+              showOnlyUrlAndEffects={true}
             />
           </div>
           
-          {/* Mobile: Split Controls */}
-          <div className="lg:hidden h-full flex flex-col">
-            {/* URL and Effects - 60% */}
-            <div className="h-3/5 border-b border-border">
-              <EffectControlPanel
-                imageState={imageState}
-                selectedEffect={selectedEffect}
-                effectParams={effectParams}
-                onLoadImage={loadImage}
-                onEffectChange={setSelectedEffect}
-                onParamsChange={updateEffectParams}
-                isMobile={true}
-                showOnlyUrlAndEffects={true}
-              />
-            </div>
-            
-            {/* Settings - 40% */}
-            <div className="h-2/5">
-              <EffectControlPanel
-                imageState={imageState}
-                selectedEffect={selectedEffect}
-                effectParams={effectParams}
-                onLoadImage={loadImage}
-                onEffectChange={setSelectedEffect}
-                onParamsChange={updateEffectParams}
-                isMobile={true}
-                showOnlySettings={true}
-              />
-            </div>
+          {/* Settings */}
+          <div className="flex-1 min-h-0">
+            <EffectControlPanel
+              imageState={imageState}
+              selectedEffect={selectedEffect}
+              effectParams={effectParams}
+              onLoadImage={loadImage}
+              onEffectChange={setSelectedEffect}
+              onParamsChange={updateEffectParams}
+              isMobile={true}
+              showOnlySettings={true}
+            />
           </div>
-        </div>
-
-        {/* Single Canvas Area - Responsive for both layouts */}
-        <div className="flex-1 h-1/2 lg:h-full">
-          <CanvasArea
-            canvasRef={canvasRef}
-            imageState={imageState}
-            onDownload={downloadImage}
-            effectName={selectedEffect}
-          />
         </div>
         
       </div>

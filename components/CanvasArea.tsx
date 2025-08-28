@@ -14,7 +14,7 @@ interface CanvasAreaProps {
 
 export function CanvasArea({ canvasRef, imageState, onDownload, effectName }: CanvasAreaProps) {
   return (
-    <div className="flex-1 lg:flex-1 bg-background relative overflow-hidden">
+    <div className="w-full h-full bg-background relative overflow-hidden">
       {/* Header with download button - Responsive positioning */}
       <div className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 lg:top-6 lg:right-6 z-10 flex gap-1.5 sm:gap-2">
         {imageState.isProcessing && (
@@ -35,17 +35,17 @@ export function CanvasArea({ canvasRef, imageState, onDownload, effectName }: Ca
         </Button>
       </div>
 
-      {/* Canvas Container - Responsive padding and sizing */}
-      <div className="h-full flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10">
+      {/* Canvas Container - Full viewport usage */}
+      <div className="h-full w-full flex items-center justify-center p-2">
         {!imageState.originalImage && !imageState.isLoading ? (
-          // Empty state - Responsive sizing
-          <div className="text-center w-full max-w-sm sm:max-w-md md:max-w-lg">
-            <Card className="border-dashed border-2 bg-card border-border">
+          // Empty state - Content-sized with proper padding
+          <div className="text-center">
+            <Card className="border-dashed border-2 bg-card border-border inline-block">
               <CardContent className="p-6 sm:p-8 md:p-10 lg:p-12">
                 <div className="text-muted-foreground">
                   <ImageIcon className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-sm sm:text-base md:text-lg font-medium text-foreground mb-2">No Image Loaded</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground max-w-xs">
                     Enter an image URL <span className="lg:hidden">below</span><span className="hidden lg:inline">in the sidebar</span> to get started
                   </p>
                 </div>
@@ -60,18 +60,14 @@ export function CanvasArea({ canvasRef, imageState, onDownload, effectName }: Ca
             <p className="hidden sm:block text-xs text-muted-foreground mt-2">This may take a moment for large images</p>
           </div>
         ) : (
-          // Canvas with image - Responsive container and sizing
-          <div className="w-full h-full max-w-full max-h-full flex items-center justify-center">
-            <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
+          // Canvas with image - Full viewport usage
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="relative w-full h-full flex items-center justify-center">
               <canvas
                 ref={canvasRef}
-                className="border border-border rounded-lg shadow-lg sm:shadow-xl md:shadow-2xl bg-card"
+                className="max-w-full max-h-full border border-border rounded-lg shadow-lg bg-card"
                 style={{ 
-                  imageRendering: 'crisp-edges',
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  display: 'block',
-                  margin: 'auto'
+                  imageRendering: 'crisp-edges'
                 }}
               />
               
