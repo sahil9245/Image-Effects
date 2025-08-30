@@ -1,26 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
-import { Alert, AlertDescription } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { ImageState, EffectType, EffectParams } from './ImageEffectsProcessor';
-import { AlertCircle, CheckCircle, Loader2, Grid, Circle, Diamond, Square } from 'lucide-react';
+import { Grid, Circle, Diamond, Square } from 'lucide-react';
 
 interface EffectControlPanelProps {
   imageState: ImageState;
   selectedEffect: EffectType;
   effectParams: Record<EffectType, EffectParams>;
-  onLoadImage: (url: string) => void;
   onEffectChange: (effect: EffectType) => void;
   onParamsChange: (effect: EffectType, params: Partial<EffectParams>) => void;
   isMobile?: boolean;
-  showOnlyUrlAndEffects?: boolean;
   showOnlySettings?: boolean;
 }
 
@@ -39,33 +35,11 @@ export function EffectControlPanel({
   imageState, 
   selectedEffect, 
   effectParams, 
-  onLoadImage, 
   onEffectChange, 
   onParamsChange,
   isMobile = false,
-  showOnlyUrlAndEffects = false,
   showOnlySettings = false
 }: EffectControlPanelProps) {
-  // Use shared state synchronized across mobile/desktop layouts
-  const [localUrlInput, setLocalUrlInput] = useState(imageState.imageUrl);
-  
-  // Sync local input with imageState when it changes (e.g., after successful load)
-  useEffect(() => {
-    setLocalUrlInput(imageState.imageUrl);
-  }, [imageState.imageUrl]);
-  
-  // Create unique ID suffix based on isMobile prop
-  const idSuffix = isMobile ? '-mobile' : '-desktop';
-
-  const handleLoadClick = () => {
-    onLoadImage(localUrlInput);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleLoadClick();
-    }
-  };
 
   const renderEffectControls = () => {
     const params = effectParams[selectedEffect];
@@ -403,39 +377,15 @@ export function EffectControlPanel({
     }
   };
 
-  // Mobile URL and Effects section
-  if (isMobile && showOnlyUrlAndEffects) {
+
+  // Mobile Effect Selector section
+  if (isMobile && !showOnlySettings) {
     return (
       <div className="bg-sidebar border-b border-sidebar-border p-4">
         <div className="space-y-4">
           {/* Compact header */}
           <div className="text-center">
             <h2 className="text-lg font-medium text-sidebar-foreground">Image Effects</h2>
-          </div>
-
-          {/* URL Input Section */}
-          <div className="space-y-3">
-            <Label htmlFor={`image-url${idSuffix}`} className="text-sidebar-foreground text-sm font-medium">Image URL</Label>
-            <div className="flex gap-3">
-              <Input
-                id={`image-url${idSuffix}`}
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={localUrlInput}
-                onChange={(e) => setLocalUrlInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="bg-input-background border-border text-foreground placeholder:text-muted-foreground text-sm h-10"
-              />
-              <Button 
-                onClick={handleLoadClick}
-                disabled={imageState.isLoading || !localUrlInput.trim()}
-                size="sm"
-                className="bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground whitespace-nowrap px-4 h-10"
-              >
-                {imageState.isLoading && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                {imageState.isLoading ? 'Loading' : 'Load'}
-              </Button>
-            </div>
           </div>
 
           {/* Effect Selector - Clean horizontal row */}
@@ -520,32 +470,6 @@ export function EffectControlPanel({
               </Button>
             </div>
           </div>
-
-          {/* Status Messages - Responsive (errors and loading only) */}
-          {(imageState.error || imageState.isLoading) && (
-            <div className="space-y-2">
-              {imageState.error && (
-                <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 py-2">
-                  <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                  <AlertDescription className="text-destructive-foreground text-xs leading-relaxed">
-                    {imageState.error.length > 60 ? 
-                      `${imageState.error.substring(0, 60)}...` : 
-                      imageState.error
-                    }
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {imageState.isLoading && (
-                <Alert className="bg-primary/10 border-primary/20 py-2">
-                  <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
-                  <AlertDescription className="text-foreground text-xs">
-                    Loading image...
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
         </div>
       </div>
     );
@@ -581,28 +505,6 @@ export function EffectControlPanel({
       </div>
 
       <div className="space-y-6 flex-1">
-        {/* URL Input Section */}
-        <div className="space-y-3">
-          <Label htmlFor={`image-url${idSuffix}`} className="text-sidebar-foreground">Image URL</Label>
-          <Input
-            id={`image-url${idSuffix}`}
-            type="url"
-            placeholder="https://example.com/image.jpg"
-            value={localUrlInput}
-            onChange={(e) => setLocalUrlInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="bg-input-background border-border text-foreground placeholder:text-muted-foreground"
-          />
-          <Button 
-            onClick={handleLoadClick}
-            disabled={imageState.isLoading || !localUrlInput.trim()}
-            className="w-full bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground"
-          >
-            {imageState.isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {imageState.isLoading ? 'Loading...' : 'Load Image'}
-          </Button>
-        </div>
-
         {/* Effect Selector */}
         <div className="space-y-3">
           <Label className="text-sidebar-foreground">Effect Type</Label>
@@ -632,33 +534,6 @@ export function EffectControlPanel({
           {renderEffectControls()}
         </div>
 
-        {/* Status Messages */}
-        <div className="space-y-3">
-          {imageState.error && (
-            <Alert variant="destructive" className="bg-destructive/10 border-destructive/20">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-destructive-foreground">
-                {imageState.error}
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {imageState.isLoading && (
-            <Alert className="bg-primary/10 border-primary/20">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <AlertDescription className="text-foreground">Loading image...</AlertDescription>
-            </Alert>
-          )}
-
-          {imageState.originalImage && !imageState.isLoading && (
-            <Alert className="bg-primary/10 border-primary/20">
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription className="text-foreground">
-                Image loaded ({imageState.originalImage.width}×{imageState.originalImage.height})
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
       </div>
 
       {/* Instructions Accordion - Hidden on mobile, positioned at bottom */}

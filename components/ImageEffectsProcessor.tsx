@@ -697,73 +697,83 @@ export function ImageEffectsProcessor() {
     ctx.fillRect(0, 0, image.width, image.height);
   };
 
-  const validateUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
+
+  const validateFile = (file: File): string | null => {
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      return 'Please select a valid image file (PNG, JPG, JPEG, GIF, WebP, SVG)';
     }
+
+    // Check file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return 'File size must be less than 10MB';
+    }
+
+    return null;
   };
 
-  const loadImage = (url: string) => {
-    if (!url.trim()) {
-      setImageState(prev => ({ ...prev, error: 'Please enter a valid image URL' }));
-      return;
-    }
-
-    if (!validateUrl(url)) {
-      setImageState(prev => ({ ...prev, error: 'Invalid URL format. Please enter a complete URL starting with http:// or https://' }));
+  const loadImageFromFile = (file: File) => {
+    const validationError = validateFile(file);
+    if (validationError) {
+      setImageState(prev => ({ 
+        ...prev, 
+        error: validationError,
+        isLoading: false 
+      }));
       return;
     }
 
     setImageState(prev => ({ 
       ...prev, 
       isLoading: true, 
-      error: null, 
-      imageUrl: url 
+      error: null,
+      imageUrl: file.name
     }));
 
-    const img = new Image();
+    const reader = new FileReader();
     
-    const loadWithoutCORS = () => {
-      const imgNoCORS = new Image();
-      imgNoCORS.onload = () => {
-        console.log('Image loaded without CORS:', imgNoCORS.width, 'x', imgNoCORS.height);
-        setImageState(prev => ({ 
-          ...prev, 
-          originalImage: imgNoCORS, 
-          isLoading: false, 
-          error: null 
-        }));
-      };
-      imgNoCORS.onerror = () => {
-        setImageState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          error: 'Failed to load image. This may be due to CORS restrictions or the image URL being invalid. Try using images from services like Unsplash, Picsum, or imgur that support cross-origin requests.' 
-        }));
-      };
-      imgNoCORS.src = url;
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        const img = new Image();
+        
+        img.onload = () => {
+          console.log('File image loaded successfully:', img.width, 'x', img.height);
+          setImageState(prev => ({ 
+            ...prev, 
+            originalImage: img, 
+            isLoading: false, 
+            error: null 
+          }));
+        };
+
+        img.onerror = () => {
+          setImageState(prev => ({ 
+            ...prev, 
+            isLoading: false, 
+            error: 'Failed to load the selected image file. Please try a different image.' 
+          }));
+        };
+
+        img.src = result;
+      }
     };
 
-    img.crossOrigin = 'anonymous';
-    
-    img.onload = () => {
-      console.log('Image loaded successfully:', img.width, 'x', img.height);
+    reader.onerror = () => {
       setImageState(prev => ({ 
         ...prev, 
-        originalImage: img, 
         isLoading: false, 
-        error: null 
+        error: 'Failed to read the selected file. Please try again.' 
       }));
     };
 
-    img.onerror = () => {
-      loadWithoutCORS();
-    };
+    reader.readAsDataURL(file);
+  };
 
-    img.src = url;
+
+  const handleImageLoad = (file: File) => {
+    loadImageFromFile(file);
   };
 
   const updateEffectParams = (effect: EffectType, newParams: Partial<EffectParams>) => {
@@ -840,7 +850,6 @@ export function ImageEffectsProcessor() {
             imageState={imageState}
             selectedEffect={selectedEffect}
             effectParams={effectParams}
-            onLoadImage={loadImage}
             onEffectChange={setSelectedEffect}
             onParamsChange={updateEffectParams}
             isMobile={false}
@@ -853,6 +862,7 @@ export function ImageEffectsProcessor() {
             canvasRef={canvasRef}
             imageState={imageState}
             onDownload={downloadImage}
+            onImageLoad={handleImageLoad}
             effectName={selectedEffect}
           />
         </div>
@@ -865,11 +875,9 @@ export function ImageEffectsProcessor() {
               imageState={imageState}
               selectedEffect={selectedEffect}
               effectParams={effectParams}
-              onLoadImage={loadImage}
-              onEffectChange={setSelectedEffect}
+                onEffectChange={setSelectedEffect}
               onParamsChange={updateEffectParams}
               isMobile={true}
-              showOnlyUrlAndEffects={true}
             />
           </div>
           
@@ -879,8 +887,7 @@ export function ImageEffectsProcessor() {
               imageState={imageState}
               selectedEffect={selectedEffect}
               effectParams={effectParams}
-              onLoadImage={loadImage}
-              onEffectChange={setSelectedEffect}
+                onEffectChange={setSelectedEffect}
               onParamsChange={updateEffectParams}
               isMobile={true}
               showOnlySettings={true}
